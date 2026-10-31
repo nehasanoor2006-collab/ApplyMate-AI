@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Opportunities & Tracker — ApplyMate AI{% endblock %}
+{% block page_title %}Opportunity Tracker{% endblock %}
+{% block page_subtitle %}Manage, analyze, and monitor your internship and scholarship applications{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- SEARCH & FILTER BAR -->
+    <div class="card card-modern mb-4">
+        <div class="card-body p-3">
+            <form method="GET" action="{% url 'opportunity_list' %}" class="row g-2 align-items-center">
+                <!-- Search Box -->
+                <div class="col-lg-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-0" placeholder="Search role, company, keywords...">
+                    </div>
+                </div>
+
+                <!-- Category Filter -->
+                <div class="col-sm-6 col-lg-3">
+                    <select name="category" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Categories</option>
+                        {% for code, label in categories %}
+                            <option value="{{ code }}" {% if selected_category == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="col-sm-6 col-lg-2">
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Statuses</option>
+                        {% for code, label in statuses %}
+                            <option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Action Button -->
+                <div class="col-lg-2 text-lg-end d-flex gap-2">
+                    <button type="submit" class="btn btn-light border w-100">Filter</button>
+                    {% if search_query or selected_category != 'all' or selected_status != 'all' %}
+                        <a href="{% url 'opportunity_list' %}" class="btn btn-outline-secondary" title="Reset Filters"><i class="bi bi-x-lg"></i></a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CATEGORY FILTER CHIPS -->
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <a href="{% url 'opportunity_list' %}" class="btn btn-sm {% if selected_category == 'all' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+            All ({{ global_total_opps }})
+        </a>
+        <a href="{% url 'opportunity_list' %}?category=internship" class="btn btn-sm {% if selected_category == 'internship' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+            Internships
+        </a>
+        <a href="{% url 'opportunity_list' %}?category=scholarship" class="btn btn-sm {% if selected_category == 'scholarship' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+            Scholarships
+        </a>
+        <a href="{% url 'opportunity_list' %}?category=job" class="btn btn-sm {% if selected_category == 'job' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+            Full-time Jobs
+        </a>
+        <a href="{% url 'opportunity_list' %}?category=fellowship" class="btn btn-sm {% if selected_category == 'fellowship' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+            Fellowships
+        </a>
+        <a href="{% url 'opportunity_list' %}?category=research" class="btn btn-sm {% if selected_category == 'research' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+            Research &amp; Grants
+        </a>
+    </div>
+
+    <!-- OPPORTUNITIES LIST -->
+    {% if opportunities %}
+    <div class="row g-3">
+        {% for opp in opportunities %}
+        <div class="col-12">
+            <div class="card card-modern card-hover p-4">
+                <div class="row align-items-center g-3">
+                    <!-- Left: Title, Org, Tags -->
+                    <div class="col-lg-5">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge {{ opp.category_badge_class }}">
+                                {{ opp.get_category_display }}
+                            </span>
+                            <span class="text-muted small">
+                                <i class="bi bi-geo-alt me-1"></i>{{ opp.location|default:"Remote" }}
+                            </span>
+                            {% if opp.priority == 'high' %}
+                                <span class="badge bg-danger-subtle text-danger rounded-pill px-2">High Priority</span>
+                            {% endif %}
+                        </div>
+
+                        <h5 class="fw-bold mb-1">
+                            <a href="{% url 'opportunity_detail' opp.pk %}" class="text-decoration-none text-dark">
+                                {{ opp.title }}
+                            </a>
+                        </h5>
+                        <div class="text-muted small fw-medium">
+                            <i class="bi bi-building me-1 text-primary"></i><strong>{{ opp.organization }}</strong>
+                            &bull; <i class="bi bi-calendar-event me-1"></i>Deadline: {{ opp.deadline }}
+                        </div>
+                    </div>
+
+                    <!-- Middle: AI Eligibility Score & Verdict -->
+                    <div class="col-sm-6 col-lg-3 text-lg-center">
+                        {% if opp.latest_analysis %}
+                            <div class="d-inline-flex align-items-center gap-2 bg-light border px-3 py-2 rounded-3">
+                                <span class="fs-4 fw-bold text-{{ opp.latest_analysis.score_color_class }}">
+                                    {{ opp.latest_analysis.match_score }}%
+                                </span>
+                                <div class="text-start">
+                                    <span class="badge bg-{{ opp.latest_analysis.score_color_class }}-subtle text-{{ opp.latest_analysis.score_color_class }} rounded-pill d-block" style="font-size: 0.7rem;">
+                                        {{ opp.latest_analysis.verdict }}
+                                    </span>
+                                    <small class="text-muted" style="font-size: 0.7rem;">
+                                        {{ opp.latest_analysis.strengths|length }} Strengths &bull; {{ opp.latest_analysis.skill_gaps|length }} Gaps
+                                    </small>
+                                </div>
+                            </div>
+                        {% else %}
+                            <form method="POST" action="{% url 'opportunity_analyze' opp.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    <i class="bi bi-cpu me-1"></i> Check AI Eligibility
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    <!-- Status Selector Dropdown -->
+                    <div class="col-sm-6 col-lg-2">
+                        <form method="POST" action="{% url 'opportunity_status_update' opp.pk %}">
+                            {% csrf_token %}
+                            <label class="small text-muted d-block mb-1">Application Status</label>
+                            <select name="status" class="form-select form-select-sm rounded-3 border" onchange="this.form.submit()">
+                                {% for val, label in statuses %}
+                                    <option value="{{ val }}" {% if opp.status == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </div>
+
+                    <!-- Right: Actions -->
+                    <div class="col-lg-2 text-lg-end d-flex align-items-center justify-content-lg-end gap-2">
+                        <a href="{% url 'opportunity_detail' opp.pk %}" class="btn btn-sm btn-primary-custom px-3">
+                            View Plan &rarr;
+                        </a>
+                        <form method="POST" action="{% url 'opportunity_delete' opp.pk %}" class="d-inline" onsubmit="return confirm('Delete this opportunity?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-light border text-danger" title="Delete Opportunity">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- EMPTY STATE -->
+    <div class="card card-modern p-5 text-center">
+        <div class="mb-3">
+            <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex p-4 fs-1">
+                <i class="bi bi-search"></i>
+            </div>
+        </div>
+        <h4 class="fw-bold mb-2">No Matching Opportunities Found</h4>
+        <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto;">
+            {% if search_query or selected_category != 'all' or selected_status != 'all' %}
+                No opportunities match your search filters. Try clearing the filters or adding a new role.
+            {% else %}
+                You haven't tracked any opportunities yet. Add an internship, scholarship, or fellowship to get started!
+            {% endif %}
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{% url 'opportunity_create' %}" class="btn btn-primary-custom">
+                <i class="bi bi-plus-lg me-1"></i> Add Opportunity
+            </a>
+            <a href="{% url 'load_demo_dataset' %}" class="btn btn-soft">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Load Sample Opportunities
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

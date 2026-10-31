@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Opportunity — ApplyMate AI{% endblock %}
+{% block page_title %}Add New Opportunity{% endblock %}
+{% block page_subtitle %}Enter internship, scholarship, or job details to run AI fit diagnostics{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row justify-content-center">
+        <div class="col-xl-9 col-lg-10">
+
+            <!-- 1-CLICK SAMPLE TEMPLATES PRE-FILL BAR -->
+            <div class="card card-modern mb-4 bg-light border">
+                <div class="card-body p-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-magic text-warning fs-5"></i>
+                            <span class="fw-bold small text-dark">Quick Test Templates:</span>
+                            <span class="text-muted small d-none d-md-inline">(Click to pre-fill instantly)</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-white bg-white border rounded-pill px-3 shadow-xs" onclick="prefillOpportunityForm('google')">
+                                <i class="bi bi-google text-danger me-1"></i> Google SWE Intern
+                            </button>
+                            <button type="button" class="btn btn-sm btn-white bg-white border rounded-pill px-3 shadow-xs" onclick="prefillOpportunityForm('fulbright')">
+                                <i class="bi bi-mortarboard-fill text-success me-1"></i> Fulbright Scholarship
+                            </button>
+                            <button type="button" class="btn btn-sm btn-white bg-white border rounded-pill px-3 shadow-xs" onclick="prefillOpportunityForm('stripe')">
+                                <i class="bi bi-credit-card text-primary me-1"></i> Stripe Backend Intern
+                            </button>
+                            <button type="button" class="btn btn-sm btn-white bg-white border rounded-pill px-3 shadow-xs" onclick="prefillOpportunityForm('openai')">
+                                <i class="bi bi-robot text-purple me-1"></i> OpenAI Fellowship
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OPPORTUNITY FORM CARD -->
+            <div class="card card-modern mb-4">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h5 class="fw-bold mb-0">Opportunity Details</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{% url 'opportunity_create' %}">
+                        {% csrf_token %}
+
+                        <!-- Row 1: Title & Organization -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label for="id_title" class="form-label fw-semibold small text-dark">
+                                    Opportunity / Role Title <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="title" id="id_title" class="form-control" placeholder="e.g. Software Engineering Intern, Fulbright Scholarship" required>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="id_organization" class="form-label fw-semibold small text-dark">
+                                    Organization / Company <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="organization" id="id_organization" class="form-control" placeholder="e.g. Google, Oxford, Stripe, NASA" required>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Category, Location, Deadline -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label for="id_category" class="form-label fw-semibold small text-dark">Category</label>
+                                <select name="category" id="id_category" class="form-select">
+                                    {% for code, label in categories %}
+                                        <option value="{{ code }}" {% if code == 'internship' %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="id_location" class="form-label fw-semibold small text-dark">Location</label>
+                                <input type="text" name="location" id="id_location" class="form-control" placeholder="e.g. Remote, Mountain View, CA">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="id_deadline" class="form-label fw-semibold small text-dark">Application Deadline</label>
+                                <input type="text" name="deadline" id="id_deadline" class="form-control" placeholder="e.g. Nov 15, 2026 or Rolling">
+                            </div>
+                        </div>
+
+                        <!-- Row 3: URL & Priority -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-8">
+                                <label for="id_url" class="form-label fw-semibold small text-dark">Listing URL</label>
+                                <input type="url" name="url" id="id_url" class="form-control" placeholder="https://careers.example.com/posting">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="id_priority" class="form-label fw-semibold small text-dark">Priority</label>
+                                <select name="priority" id="id_priority" class="form-select">
+                                    {% for code, label in priorities %}
+                                        <option value="{{ code }}" {% if code == 'medium' %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Row 4: Description -->
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label fw-semibold small text-dark">
+                                Full Opportunity Description <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="description" id="id_description" rows="6" class="form-control" placeholder="Paste the job or scholarship description here..." required></textarea>
+                            <small class="text-muted">The AI compares this text against your resume to identify match percentage and skill gaps.</small>
+                        </div>
+
+                        <!-- Row 5: Key Requirements -->
+                        <div class="mb-4">
+                            <label for="id_requirements" class="form-label fw-semibold small text-dark">
+                                Key Requirements &amp; Eligibility (Optional Summary)
+                            </label>
+                            <textarea name="requirements" id="id_requirements" rows="2" class="form-control" placeholder="e.g. Pursuing CS degree, Python/C++ experience, minimum 3.5 GPA..."></textarea>
+                        </div>
+
+                        <!-- Auto-Analyze Checkbox -->
+                        <div class="form-check form-switch p-3 bg-light rounded-3 border mb-4 d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-3" type="checkbox" name="auto_analyze" id="id_auto_analyze" checked style="width: 2.2em; height: 1.2em;">
+                            <label class="form-check-label" for="id_auto_analyze">
+                                <strong class="d-block text-dark small">Run AI Fit &amp; Eligibility Analysis Immediately</strong>
+                                <span class="text-muted small">
+                                    {% if active_resume %}
+                                        Will analyze against your active resume: <strong>{{ active_resume.get_candidate_name }}</strong>.
+                                    {% else %}
+                                        (Note: Upload or select a resume to enable full matching)
+                                    {% endif %}
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex align-items-center justify-content-end gap-2">
+                            <a href="{% url 'opportunity_list' %}" class="btn btn-light border px-4">Cancel</a>
+                            <button type="submit" class="btn btn-primary-custom px-4">
+                                <i class="bi bi-stars me-1"></i> Save &amp; Process Opportunity
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Expose sample opportunities for 1-click test fill
+window.APPLYMATE_SAMPLES = {
+    google: {
+        title: "Software Engineering Intern - Cloud & AI Platforms",
+        organization: "Google",
+        category: "internship",
+        location: "Mountain View, CA / Hybrid",
+        deadline: "November 15, 2026",
+        url: "https://careers.google.com",
+        description: "Google is looking for Software Engineering Interns to join our Cloud & AI Platform organization. Collaborate with engineers to build scalable cloud microservices, develop APIs in Python, C++, and Go, and integrate Gemini LLM tooling.\n\nMinimum Qualifications:\n- Pursuing BS or MS in Computer Science.\n- Proficiency in Python, C++, or Java.\n- Strong foundation in data structures and algorithms.\n\nPreferred:\n- Experience with Django, FastAPI, Docker, and Generative AI APIs.",
+        requirements: "Pursuing CS degree, Python/C++ proficiency, algorithms, Django/FastAPI and cloud familiarity."
+    },
+    fulbright: {
+        title: "Fulbright Foreign Student Fellowship & Global Grant",
+        organization: "U.S. Department of State & IIE",
+        category: "scholarship",
+        location: "Global / International Study",
+        deadline: "October 30, 2026",
+        url: "https://foreign.fulbrightonline.org",
+        description: "The Fulbright Foreign Student Program provides full tuition, living stipend, and health insurance for graduate study and research in the United States.\n\nEligibility:\n- Demonstrated intellectual rigor and research potential.\n- Strong academic track record and clear statement of purpose.\n- Cross-cultural engagement and leadership in chosen discipline.\n\nRequirements:\n- Academic Statement of Purpose\n- Personal Statement on formative background and community impact.",
+        requirements: "Academic excellence, clear research vision, leadership, Statement of Purpose."
+    },
+    stripe: {
+        title: "Backend Infrastructure & API Engineering Intern",
+        organization: "Stripe",
+        category: "internship",
+        location: "San Francisco, CA / Remote",
+        deadline: "Rolling Admissions",
+        url: "https://stripe.com/jobs",
+        description: "At Stripe, our infrastructure handles hundreds of billions in payment volume annually. We are seeking Backend Interns to write clean Python and Go, optimize PostgreSQL schemas and Redis caching, and maintain high-availability APIs.\n\nRequirements:\n- Enrolled in CS or equivalent program.\n- Strong Python and SQL foundation.\n- Understanding of distributed systems and RESTful APIs.",
+        requirements: "Enrolled in CS degree, strong Python and SQL skills, database optimization."
+    },
+    openai: {
+        title: "OpenAI Emerging AI Fellows Program",
+        organization: "OpenAI",
+        category: "fellowship",
+        location: "San Francisco, CA",
+        deadline: "December 1, 2026",
+        url: "https://openai.com/careers",
+        description: "The OpenAI Emerging Fellows Program is an intensive 6-month research residency for talented individuals passionate about large language models, alignment, evaluation benchmarks, and multimodal reasoning.\n\nRequirements:\n- Deep Python and PyTorch proficiency.\n- Familiarity with transformer architectures and fine-tuning.\n- Genuine curiosity and dedication to safe AI stewardship.",
+        requirements: "Python, PyTorch, Transformer architectures, research orientation."
+    }
+};
+</script>
+{% endblock %}

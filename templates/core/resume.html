@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resume & Profile — ApplyMate AI{% endblock %}
+{% block page_title %}Resume &amp; Candidate Profile{% endblock %}
+{% block page_subtitle %}Extracted structured intelligence from your PDF resume{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- TOP CONTROLS & UPLOAD BAR -->
+    <div class="card card-modern mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-6">
+                    <h5 class="fw-bold mb-1">
+                        {% if active_resume %}
+                            Active Profile: <span class="text-primary">{{ active_resume.get_candidate_name }}</span>
+                        {% else %}
+                            No Active Resume Loaded
+                        {% endif %}
+                    </h5>
+                    <p class="text-muted small mb-0">
+                        Upload your PDF resume to extract skills, education, and projects for AI opportunity matching.
+                    </p>
+                </div>
+                <div class="col-lg-6 text-lg-end">
+                    <button class="btn btn-primary-custom btn-sm me-2" data-bs-toggle="collapse" data-bs-target="#uploadCollapse">
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload PDF Resume
+                    </button>
+                    <!-- Pre-packaged sample quick load buttons -->
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-soft btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Load Sample Profile
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
+                            <li><h6 class="dropdown-header">Choose Sample Candidate</h6></li>
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'resume_load_sample' 'tech_intern' %}">
+                                    <div class="fw-bold">Alex Chen (SWE &amp; AI Candidate)</div>
+                                    <small class="text-muted">UC Berkeley, Django, React, PyTorch</small>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'resume_load_sample' 'research_scholar' %}">
+                                    <div class="fw-bold">Priya Sharma (Data Science Scholar)</div>
+                                    <small class="text-muted">BU, NLP, Healthcare AI, Fellowships</small>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLLAPSIBLE UPLOAD FORM -->
+            <div class="collapse mt-4 pt-3 border-top" id="uploadCollapse">
+                <form action="{% url 'resume_upload' %}" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="p-4 rounded-3 border-2 border-dashed bg-light text-center">
+                        <i class="bi bi-file-earmark-pdf fs-1 text-danger mb-2 d-block"></i>
+                        <h6 class="fw-bold mb-1">Select your PDF Resume</h6>
+                        <p class="text-muted small mb-3">PyPDF2 will extract text, and Gemini/Demo engine will structure your profile.</p>
+                        
+                        <div class="row justify-content-center mb-3">
+                            <div class="col-md-6">
+                                <input type="file" name="resume_file" class="form-control" accept=".pdf" required>
+                            </div>
+                        </div>
+
+                        <div class="row justify-content-center mb-3">
+                            <div class="col-md-6">
+                                <input type="text" name="title" class="form-control form-control-sm" placeholder="Resume Title (e.g. Software Engineer Resume 2026)">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom btn-sm px-4">
+                            <i class="bi bi-cpu me-1"></i> Upload &amp; Extract Intelligence
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if active_resume %}
+    <!-- RESUME PROFILE MAIN VIEW -->
+    <div class="row g-4 mb-4">
+        <!-- LEFT COLUMN: Candidate Header, Contact Info, Skills -->
+        <div class="col-lg-5">
+            <!-- PROFILE IDENTITY CARD -->
+            <div class="card card-modern mb-4">
+                <div class="card-body p-4 text-center">
+                    <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px; font-size: 1.8rem; font-weight: 800;">
+                        {{ active_resume.get_candidate_name|slice:":1" }}
+                    </div>
+                    <h4 class="fw-bold mb-1">{{ active_resume.get_candidate_name }}</h4>
+                    <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 mb-3">
+                        <i class="bi bi-check-circle-fill me-1"></i> Active Resume
+                    </span>
+
+                    <p class="text-muted small mb-4 text-start">
+                        {{ active_resume.parsed_data.summary|default:"Applicant profile ready for opportunity matching." }}
+                    </p>
+
+                    <!-- Contact Badges -->
+                    <div class="list-group list-group-flush text-start small border-top pt-3">
+                        {% if active_resume.parsed_data.email %}
+                        <div class="list-group-item px-0 d-flex align-items-center justify-content-between border-0 py-2">
+                            <span class="text-muted"><i class="bi bi-envelope me-2 text-primary"></i>Email</span>
+                            <span class="fw-semibold text-dark">{{ active_resume.parsed_data.email }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if active_resume.parsed_data.phone %}
+                        <div class="list-group-item px-0 d-flex align-items-center justify-content-between border-0 py-2">
+                            <span class="text-muted"><i class="bi bi-telephone me-2 text-primary"></i>Phone</span>
+                            <span class="fw-semibold text-dark">{{ active_resume.parsed_data.phone }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if active_resume.parsed_data.location %}
+                        <div class="list-group-item px-0 d-flex align-items-center justify-content-between border-0 py-2">
+                            <span class="text-muted"><i class="bi bi-geo-alt me-2 text-primary"></i>Location</span>
+                            <span class="fw-semibold text-dark">{{ active_resume.parsed_data.location }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if active_resume.parsed_data.linkedin %}
+                        <div class="list-group-item px-0 d-flex align-items-center justify-content-between border-0 py-2">
+                            <span class="text-muted"><i class="bi bi-linkedin me-2 text-primary"></i>LinkedIn</span>
+                            <a href="{{ active_resume.parsed_data.linkedin }}" target="_blank" class="fw-semibold text-decoration-none">Profile &rarr;</a>
+                        </div>
+                        {% endif %}
+
+                        {% if active_resume.parsed_data.github %}
+                        <div class="list-group-item px-0 d-flex align-items-center justify-content-between border-0 py-2">
+                            <span class="text-muted"><i class="bi bi-github me-2 text-primary"></i>GitHub</span>
+                            <a href="{{ active_resume.parsed_data.github }}" target="_blank" class="fw-semibold text-decoration-none">Repositories &rarr;</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- SKILLS MATRIX CARD -->
+            <div class="card card-modern">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold mb-0">Extracted Skills</h5>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill">{{ active_resume.skills_count }} Total</span>
+                </div>
+                <div class="card-body p-4">
+                    {% if active_resume.parsed_data.skills %}
+                        {% for cat, skills_list in active_resume.parsed_data.skills.items %}
+                            {% if skills_list %}
+                            <div class="mb-3">
+                                <h6 class="text-muted small text-uppercase fw-bold mb-2 tracking-wide">
+                                    {{ cat|cut:"_"|title }}
+                                </h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for s in skills_list %}
+                                        <span class="skill-tag">
+                                            <i class="bi bi-check2 text-primary"></i> {{ s }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small">No structured skills categorized.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Experience, Education, Projects, Certifications -->
+        <div class="col-lg-7">
+            <!-- WORK EXPERIENCE -->
+            <div class="card card-modern mb-4">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-briefcase me-2 text-primary"></i>Work &amp; Leadership Experience</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if active_resume.get_experience_list %}
+                        {% for exp in active_resume.get_experience_list %}
+                        <div class="mb-4 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between mb-1">
+                                <h6 class="fw-bold text-dark mb-0">{{ exp.role }}</h6>
+                                <span class="badge bg-light text-muted border rounded-pill">{{ exp.duration }}</span>
+                            </div>
+                            <small class="text-primary fw-semibold d-block mb-2">
+                                {{ exp.company }}{% if exp.location %} &bull; {{ exp.location }}{% endif %}
+                            </small>
+                            <p class="text-muted small mb-0" style="line-height: 1.6;">
+                                {{ exp.description }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small">No prior work experience recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- EDUCATION -->
+            <div class="card card-modern mb-4">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-mortarboard me-2 text-primary"></i>Education &amp; Academics</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if active_resume.get_education_list %}
+                        {% for edu in active_resume.get_education_list %}
+                        <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between mb-1">
+                                <h6 class="fw-bold text-dark mb-0">{{ edu.degree }}</h6>
+                                <span class="badge bg-light text-muted border rounded-pill">{{ edu.year }}</span>
+                            </div>
+                            <small class="text-muted fw-semibold d-block mb-2">
+                                <i class="bi bi-bank me-1"></i>{{ edu.institution }}
+                                {% if edu.gpa %}&bull; <span class="text-success fw-bold">GPA: {{ edu.gpa }}</span>{% endif %}
+                            </small>
+                            {% if edu.details %}
+                            <p class="text-muted small mb-0">{{ edu.details }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small">No education entries found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- PROJECTS PORTFOLIO -->
+            <div class="card card-modern mb-4">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-code-slash me-2 text-primary"></i>Key Projects &amp; Implementations</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if active_resume.get_projects_list %}
+                        {% for proj in active_resume.get_projects_list %}
+                        <div class="mb-4 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                            <h6 class="fw-bold text-dark mb-1">{{ proj.title }}</h6>
+                            {% if proj.tech %}
+                            <div class="mb-2">
+                                <span class="badge bg-light text-secondary border small">{{ proj.tech }}</span>
+                            </div>
+                            {% endif %}
+                            <p class="text-muted small mb-0" style="line-height: 1.6;">
+                                {{ proj.description }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small">No project entries found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- CERTIFICATIONS -->
+            {% if active_resume.parsed_data.certifications %}
+            <div class="card card-modern">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-patch-check me-2 text-primary"></i>Certifications &amp; Honors</h5>
+                </div>
+                <div class="card-body p-4">
+                    <ul class="list-unstyled mb-0 small">
+                        {% for cert in active_resume.parsed_data.certifications %}
+                        <li class="mb-2 d-flex align-items-center gap-2">
+                            <i class="bi bi-award-fill text-warning"></i>
+                            <span class="text-dark fw-medium">{{ cert }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- SAVED RESUMES SWITCHER -->
+    {% if all_resumes.count > 1 %}
+    <div class="card card-modern mb-4">
+        <div class="card-header bg-white py-3 px-4 border-bottom">
+            <h5 class="fw-bold mb-0">Switch Active Resume</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-muted">
+                        <tr>
+                            <th class="ps-4">Resume Title</th>
+                            <th>Candidate</th>
+                            <th>Skills</th>
+                            <th>Status</th>
+                            <th class="pe-4 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in all_resumes %}
+                        <tr>
+                            <td class="ps-4 fw-semibold text-dark">{{ r.title }}</td>
+                            <td>{{ r.get_candidate_name }}</td>
+                            <td><span class="badge bg-light text-muted border">{{ r.skills_count }} Skills</span></td>
+                            <td>
+                                {% if r.is_active %}
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-2">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-end">
+                                {% if not r.is_active %}
+                                <form action="{% url 'resume_select_active' r.pk %}" method="POST" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-primary py-1 px-2 rounded-2">Set Active</button>
+                                </form>
+                                {% endif %}
+                                <form action="{% url 'resume_delete' r.pk %}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Delete this resume?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2 rounded-2"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- EMPTY STATE IF NO RESUME AT ALL -->
+    <div class="card card-modern p-5 text-center">
+        <div class="mb-3">
+            <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex p-4 fs-1">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+            </div>
+        </div>
+        <h4 class="fw-bold mb-2">No Resume Uploaded Yet</h4>
+        <p class="text-muted small mb-4" style="max-width: 500px; margin: 0 auto;">
+            Upload your PDF resume to let ApplyMate extract your skills and generate personalized application roadmaps and cover letters. Or load one of our ready-to-test candidate profiles with one click.
+        </p>
+        <div class="d-flex justify-content-center flex-wrap gap-2">
+            <a href="{% url 'resume_load_sample' 'tech_intern' %}" class="btn btn-primary-custom">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Load Alex Chen (SWE Intern) Profile
+            </a>
+            <a href="{% url 'resume_load_sample' 'research_scholar' %}" class="btn btn-soft">
+                <i class="bi bi-mortarboard-fill me-1"></i> Load Priya Sharma (Scholar) Profile
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

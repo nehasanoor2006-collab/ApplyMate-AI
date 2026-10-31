@@ -1,0 +1,437 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Discover Opportunities — ApplyMate AI{% endblock %}
+{% block page_title %}Opportunity Discovery Agent{% endblock %}
+{% block page_subtitle %}Personalized recommendations matched to your skills, education, and projects{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- CANDIDATE PROFILE BAR -->
+    <div class="card card-modern mb-4 overflow-hidden border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.1) 50%, rgba(59, 130, 246, 0.08) 100%); border-left: 4px solid var(--primary) !important;">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-primary text-white rounded-pill px-3 py-1 fw-bold" style="font-size: 0.75rem;">
+                            <i class="bi bi-robot me-1"></i> Autonomous Discovery Agent
+                        </span>
+                        {% if active_resume %}
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1">
+                                <i class="bi bi-check-circle-fill me-1"></i> Active Resume: {{ active_resume.get_candidate_name }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> No Active Resume Selected
+                            </span>
+                        {% endif %}
+                    </div>
+                    <h3 class="fw-bold mb-1">Tailored Opportunities for Your Career Path</h3>
+                    <p class="text-muted small mb-0">
+                        {% if active_resume %}
+                            Scanning official portals against your <strong class="text-dark">{{ active_resume.skills_count }} extracted skills</strong>, education, and projects. Ranked by verified alignment.
+                        {% else %}
+                            Upload your resume or load a sample candidate profile to unlock automated match scoring and skill gap audits.
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    {% if active_resume %}
+                        <a href="{% url 'resume' %}" class="btn btn-sm btn-white bg-white border rounded-pill px-3 shadow-xs">
+                            <i class="bi bi-person-lines-fill me-1 text-primary"></i> Edit Profile &amp; Skills
+                        </a>
+                    {% else %}
+                        <div class="d-flex flex-wrap justify-content-lg-end gap-2">
+                            <a href="{% url 'resume_load_sample' 'tech_intern' %}" class="btn btn-sm btn-primary-custom rounded-pill px-3">
+                                <i class="bi bi-lightning-charge-fill me-1"></i> Load Alex Chen Profile
+                            </a>
+                            <a href="{% url 'resume' %}" class="btn btn-sm btn-light border rounded-pill px-3">
+                                <i class="bi bi-upload me-1"></i> Upload PDF
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OFFICIAL DATA SOURCES TRANSPARENCY BANNER -->
+    <div class="card card-modern mb-4 bg-white border">
+        <div class="card-body p-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary-subtle text-primary p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="bi bi-shield-check fs-5"></i>
+                    </div>
+                    <div>
+                        <span class="fw-bold text-dark small d-block">Verified Official Opportunity Sources</span>
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            Live portals curated with verifiable application links and official guidelines.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <a href="https://internship.aicte-india.org/internships" target="_blank" class="badge bg-light text-dark border text-decoration-none px-3 py-2 rounded-pill hover-shadow">
+                        <i class="bi bi-bank me-1 text-danger"></i> AICTE National Internship Portal <i class="bi bi-box-arrow-up-right ms-1 text-muted"></i>
+                    </a>
+                    <a href="https://scholarships.gov.in/All-Scholarships" target="_blank" class="badge bg-light text-dark border text-decoration-none px-3 py-2 rounded-pill hover-shadow">
+                        <i class="bi bi-mortarboard-fill me-1 text-success"></i> National Scholarship Portal (NSP) <i class="bi bi-box-arrow-up-right ms-1 text-muted"></i>
+                    </a>
+                    <span class="badge bg-light text-muted border px-3 py-2 rounded-pill">
+                        <i class="bi bi-building me-1 text-primary"></i> Official Tech Portals (Google, Stripe, MSR)
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- METRICS SUMMARY CARDS -->
+    <div class="row g-3 mb-4">
+        <!-- Total Discovered -->
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'discover_opportunities' %}?category={{ selected_category }}&q={{ search_query }}" class="text-decoration-none">
+                <div class="card card-modern stat-card h-100 {% if selected_tier == 'all' %}border-primary{% endif %}">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted fw-semibold small">Total Recommendations</span>
+                        <div class="stat-icon primary">
+                            <i class="bi bi-radar"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-dark">{{ total_count }}</h3>
+                    <small class="text-muted">Filtered across official portals</small>
+                </div>
+            </a>
+        </div>
+
+        <!-- Best Matches (>= 75%) -->
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'discover_opportunities' %}?tier=best&category={{ selected_category }}&q={{ search_query }}" class="text-decoration-none">
+                <div class="card card-modern stat-card h-100 {% if selected_tier == 'best' %}border-success shadow-md{% endif %}" style="border-top: 3px solid #10b981;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted fw-semibold small">Best Matches</span>
+                        <div class="stat-icon emerald">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-success">{{ best_count }}</h3>
+                    <small class="text-muted">&ge; 75% Strong Alignment</small>
+                </div>
+            </a>
+        </div>
+
+        <!-- Good Matches (55% - 74%) -->
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'discover_opportunities' %}?tier=good&category={{ selected_category }}&q={{ search_query }}" class="text-decoration-none">
+                <div class="card card-modern stat-card h-100 {% if selected_tier == 'good' %}border-primary shadow-md{% endif %}" style="border-top: 3px solid #6366f1;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted fw-semibold small">Good Matches</span>
+                        <div class="stat-icon secondary">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-primary">{{ good_count }}</h3>
+                    <small class="text-muted">55% &ndash; 74% Solid Fit</small>
+                </div>
+            </a>
+        </div>
+
+        <!-- Opportunities to Explore (< 55%) -->
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'discover_opportunities' %}?tier=explore&category={{ selected_category }}&q={{ search_query }}" class="text-decoration-none">
+                <div class="card card-modern stat-card h-100 {% if selected_tier == 'explore' %}border-warning shadow-md{% endif %}" style="border-top: 3px solid #f59e0b;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted fw-semibold small">Explore Growth Roles</span>
+                        <div class="stat-icon amber">
+                            <i class="bi bi-compass"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-warning">{{ explore_count }}</h3>
+                    <small class="text-muted">Stretch / Adjacent Domains</small>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- FILTER & SEARCH BAR -->
+    <div class="card card-modern mb-4">
+        <div class="card-body p-3">
+            <form method="GET" action="{% url 'discover_opportunities' %}" class="row g-2 align-items-center">
+                <!-- Search Box -->
+                <div class="col-lg-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-0" placeholder="Search by role, company, skills, or source...">
+                    </div>
+                </div>
+
+                <!-- Category Filter -->
+                <div class="col-sm-6 col-lg-3">
+                    <select name="category" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Opportunity Types</option>
+                        {% for code, label in categories %}
+                            <option value="{{ code }}" {% if selected_category == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Tier Filter -->
+                <div class="col-sm-6 col-lg-2">
+                    <select name="tier" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if selected_tier == 'all' %}selected{% endif %}>All Match Tiers</option>
+                        <option value="best" {% if selected_tier == 'best' %}selected{% endif %}>Best Matches (&ge; 75%)</option>
+                        <option value="good" {% if selected_tier == 'good' %}selected{% endif %}>Good Matches (55-74%)</option>
+                        <option value="explore" {% if selected_tier == 'explore' %}selected{% endif %}>Explore (&lt; 55%)</option>
+                    </select>
+                </div>
+
+                <!-- Action Button -->
+                <div class="col-lg-2 text-lg-end d-flex gap-2">
+                    <button type="submit" class="btn btn-light border w-100">Filter</button>
+                    {% if search_query or selected_category != 'all' or selected_tier != 'all' %}
+                        <a href="{% url 'discover_opportunities' %}" class="btn btn-outline-secondary" title="Reset Filters"><i class="bi bi-x-lg"></i></a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TIER & CATEGORY PILLS -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+        <!-- Category Chips -->
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'discover_opportunities' %}?category=all&tier={{ selected_tier }}&q={{ search_query }}" class="btn btn-sm {% if selected_category == 'all' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+                All ({{ total_count }})
+            </a>
+            <a href="{% url 'discover_opportunities' %}?category=internship&tier={{ selected_tier }}&q={{ search_query }}" class="btn btn-sm {% if selected_category == 'internship' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+                <i class="bi bi-briefcase me-1"></i> Internships
+            </a>
+            <a href="{% url 'discover_opportunities' %}?category=scholarship&tier={{ selected_tier }}&q={{ search_query }}" class="btn btn-sm {% if selected_category == 'scholarship' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+                <i class="bi bi-mortarboard me-1"></i> Scholarships
+            </a>
+            <a href="{% url 'discover_opportunities' %}?category=fellowship&tier={{ selected_tier }}&q={{ search_query }}" class="btn btn-sm {% if selected_category == 'fellowship' %}btn-primary-custom{% else %}btn-light border{% endif %} rounded-pill px-3">
+                <i class="bi bi-award me-1"></i> Fellowships
+            </a>
+        </div>
+
+        <!-- Ranking Tier Quick Filter -->
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'discover_opportunities' %}?category={{ selected_category }}&tier=all&q={{ search_query }}" class="btn {% if selected_tier == 'all' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                All Ranks
+            </a>
+            <a href="{% url 'discover_opportunities' %}?category={{ selected_category }}&tier=best&q={{ search_query }}" class="btn {% if selected_tier == 'best' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                <i class="bi bi-stars me-1"></i> Best
+            </a>
+            <a href="{% url 'discover_opportunities' %}?category={{ selected_category }}&tier=good&q={{ search_query }}" class="btn {% if selected_tier == 'good' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                Good
+            </a>
+            <a href="{% url 'discover_opportunities' %}?category={{ selected_category }}&tier=explore&q={{ search_query }}" class="btn {% if selected_tier == 'explore' %}btn-warning text-dark{% else %}btn-outline-secondary{% endif %}">
+                Explore
+            </a>
+        </div>
+    </div>
+
+    <!-- DISCLAIMER NOTICE -->
+    <div class="p-2 px-3 rounded-3 bg-light border mb-4 d-flex align-items-center justify-content-between small text-muted">
+        <div>
+            <i class="bi bi-info-circle me-1 text-primary"></i>
+            <strong>AI Match Methodology:</strong> Scores are heuristic career diagnostics derived from technical skills, coursework, and projects. Match scores do not guarantee official eligibility, admission, or selection.
+        </div>
+        <span class="badge bg-white text-secondary border">Diagnostic Mode</span>
+    </div>
+
+    <!-- OPPORTUNITY RECOMMENDATION CARDS -->
+    {% if opportunities %}
+    <div class="row g-4 mb-4">
+        {% for opp in opportunities %}
+        <div class="col-12">
+            <div class="card card-modern card-hover p-4 position-relative overflow-hidden" 
+                 style="border-left: 5px solid {% if opp.match_tier == 'best' %}#10b981{% elif opp.match_tier == 'good' %}#6366f1{% else %}#f59e0b{% endif %} !important;">
+                
+                <div class="row g-3">
+                    <!-- LEFT COLUMN: Main Info, Source Badge, Organization -->
+                    <div class="col-lg-8">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <!-- Category Badge -->
+                            <span class="badge {{ opp.category|default:'badge-default' }}">
+                                {{ opp.category|title }}
+                            </span>
+
+                            <!-- Verified Source Link Badge -->
+                            {% if opp.source_name %}
+                            <a href="{{ opp.source_url }}" target="_blank" class="badge bg-light text-dark border text-decoration-none py-1 px-2 rounded-pill">
+                                <i class="bi bi-patch-check-fill text-primary me-1"></i>{{ opp.source_name }}
+                                <i class="bi bi-box-arrow-up-right ms-1 text-muted" style="font-size: 0.65rem;"></i>
+                            </a>
+                            {% endif %}
+
+                            <!-- Location -->
+                            <span class="text-muted small">
+                                <i class="bi bi-geo-alt me-1"></i>{{ opp.location }}
+                            </span>
+
+                            <!-- Deadline -->
+                            <span class="text-muted small">
+                                <i class="bi bi-calendar3 me-1"></i>Deadline: <strong>{{ opp.deadline }}</strong>
+                            </span>
+                        </div>
+
+                        <!-- Title -->
+                        <h4 class="fw-bold text-dark mb-1">
+                            {{ opp.title }}
+                        </h4>
+
+                        <!-- Organization -->
+                        <h6 class="text-primary fw-semibold mb-3">
+                            <i class="bi bi-building me-1"></i>{{ opp.organization }}
+                        </h6>
+
+                        <!-- AI Match Explanation -->
+                        <div class="p-3 rounded-3 bg-light border mb-3">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-lightbulb-fill text-warning mt-1"></i>
+                                <div>
+                                    <strong class="d-block text-dark small">AI Diagnostic Insight:</strong>
+                                    <p class="small text-muted mb-0" style="line-height: 1.55;">
+                                        {{ opp.explanation }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Matching Skills & Missing Skills -->
+                        <div class="row g-2 mb-3">
+                            <!-- Matching Skills -->
+                            <div class="col-md-6">
+                                <span class="d-block small text-success fw-bold mb-1">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Matching Skills ({{ opp.matching_skills|length }})
+                                </span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if opp.matching_skills %}
+                                        {% for s in opp.matching_skills %}
+                                            <span class="skill-tag matched" style="font-size: 0.78rem; padding: 0.25rem 0.65rem;">
+                                                <i class="bi bi-check2"></i> {{ s }}
+                                            </span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <small class="text-muted">No direct technical overlap detected.</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Missing Skills / Bridgeable Gaps -->
+                            <div class="col-md-6">
+                                <span class="d-block small text-danger fw-bold mb-1">
+                                    <i class="bi bi-exclamation-circle-fill me-1"></i> Missing / To Prepare ({{ opp.missing_skills|length }})
+                                </span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if opp.missing_skills %}
+                                        {% for s in opp.missing_skills %}
+                                            <span class="skill-tag missing" style="font-size: 0.78rem; padding: 0.25rem 0.65rem;">
+                                                <i class="bi bi-plus-lg"></i> {{ s }}
+                                            </span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <small class="text-success"><i class="bi bi-check-all me-1"></i>All key target skills present!</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Brief Description Snippet -->
+                        <p class="text-muted small mb-0" style="line-height: 1.6;">
+                            {{ opp.description|truncatewords:40 }}
+                        </p>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Score Meter, Actions, Official Link -->
+                    <div class="col-lg-4 d-flex flex-column justify-content-between text-lg-end border-start-lg ps-lg-4">
+                        <!-- Score Display Box -->
+                        <div class="p-3 rounded-3 bg-light border text-center mb-3">
+                            <span class="text-uppercase text-muted fw-bold small d-block" style="font-size: 0.7rem; letter-spacing: 0.05em;">
+                                Estimated Match Score
+                            </span>
+                            <div class="d-flex align-items-center justify-content-center gap-1 my-1">
+                                <span class="display-6 fw-bold text-{% if opp.match_tier == 'best' %}success{% elif opp.match_tier == 'good' %}primary{% else %}warning{% endif %}">
+                                    {{ opp.match_score }}%
+                                </span>
+                            </div>
+                            <span class="badge {% if opp.match_tier == 'best' %}bg-success-subtle text-success border border-success-subtle{% elif opp.match_tier == 'good' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-warning-subtle text-dark border border-warning-subtle{% endif %} rounded-pill px-3 py-1">
+                                {% if opp.match_tier == 'best' %}
+                                    <i class="bi bi-award-fill me-1"></i> Best Match
+                                {% elif opp.match_tier == 'good' %}
+                                    <i class="bi bi-hand-thumbs-up-fill me-1"></i> Good Match
+                                {% else %}
+                                    <i class="bi bi-compass-fill me-1"></i> Explore Growth
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-column gap-2">
+                            <!-- Analyze Opportunity (Connects into existing deep analysis & roadmap) -->
+                            <form method="POST" action="{% url 'discover_analyze_opportunity' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="opportunity_id" value="{{ opp.id }}">
+                                <button type="submit" class="btn btn-primary-custom w-100 py-2">
+                                    <i class="bi bi-cpu me-1"></i> Analyze Opportunity
+                                </button>
+                            </form>
+
+                            <!-- Save to Tracker Button or Status Indicator -->
+                            {% if opp.is_saved %}
+                                <div class="d-flex align-items-center justify-content-center gap-2 py-1 px-3 bg-success-subtle text-success border border-success-subtle rounded-3 small">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span class="fw-semibold">Saved in Tracker ({{ opp.saved_opp_status|title }})</span>
+                                    {% if opp.saved_opp_id %}
+                                    <a href="{% url 'opportunity_detail' opp.saved_opp_id %}" class="fw-bold text-success text-decoration-none ms-1">&rarr;</a>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <form method="POST" action="{% url 'discover_save_opportunity' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="opportunity_id" value="{{ opp.id }}">
+                                    <button type="submit" class="btn btn-outline-secondary w-100 py-1 rounded-3">
+                                        <i class="bi bi-bookmark-plus me-1"></i> Save to Tracker
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            <!-- Official Source External Link -->
+                            <a href="{{ opp.url }}" target="_blank" class="btn btn-sm btn-link text-decoration-none text-muted small text-center mt-1">
+                                <i class="bi bi-box-arrow-up-right me-1"></i> Open Official Source Listing &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- EMPTY STATE -->
+    <div class="card card-modern p-5 text-center">
+        <div class="mb-3">
+            <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex p-4 fs-1">
+                <i class="bi bi-search"></i>
+            </div>
+        </div>
+        <h4 class="fw-bold mb-2">No Matching Opportunities Discovered</h4>
+        <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto;">
+            We couldn't find any opportunities matching your current filters. Try resetting your search filters or choosing "All Opportunity Types".
+        </p>
+        <div>
+            <a href="{% url 'discover_opportunities' %}" class="btn btn-primary-custom">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset All Filters
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

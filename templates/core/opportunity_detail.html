@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ opp.title }} at {{ opp.organization }} — ApplyMate AI{% endblock %}
+{% block page_title %}{{ opp.title }}{% endblock %}
+{% block page_subtitle %}{{ opp.organization }} &bull; {{ opp.get_category_display }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- TOP HEADER CARD -->
+    <div class="card card-modern mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <span class="badge {{ opp.category_badge_class }}">
+                            {{ opp.get_category_display }}
+                        </span>
+                        <span class="badge {{ opp.status_badge_class }} rounded-pill px-3 py-1">
+                            {{ opp.get_status_display }}
+                        </span>
+                        {% if opp.priority == 'high' %}
+                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2">High Priority</span>
+                        {% endif %}
+                        <span class="text-muted small">
+                            <i class="bi bi-geo-alt me-1"></i>{{ opp.location|default:"Remote / Flexible" }}
+                        </span>
+                    </div>
+
+                    <h3 class="fw-bold mb-1">{{ opp.title }}</h3>
+                    <h6 class="text-muted fw-semibold mb-2">
+                        <i class="bi bi-building me-1 text-primary"></i>{{ opp.organization }}
+                    </h6>
+
+                    <div class="d-flex flex-wrap align-items-center gap-3 text-muted small">
+                        <span><i class="bi bi-calendar-event me-1"></i>Deadline: <strong>{{ opp.deadline }}</strong></span>
+                        {% if opp.url %}
+                            <a href="{{ opp.url }}" target="_blank" class="text-primary text-decoration-none fw-semibold">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>View Official Posting
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Status Updater & Action Buttons -->
+                <div class="col-lg-4 text-lg-end">
+                    <div class="d-flex flex-column align-items-lg-end gap-2">
+                        <!-- Quick Status Selector -->
+                        <form method="POST" action="{% url 'opportunity_status_update' opp.pk %}" class="d-flex align-items-center gap-2">
+                            {% csrf_token %}
+                            <label class="small text-muted text-nowrap">Status:</label>
+                            <select name="status" class="form-select form-select-sm rounded-3 border" onchange="this.form.submit()" style="width: auto;">
+                                {% for val, label in statuses %}
+                                    <option value="{{ val }}" {% if opp.status == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+
+                        <!-- Re-run Analysis Button -->
+                        <form method="POST" action="{% url 'opportunity_analyze' opp.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-primary-custom">
+                                <i class="bi bi-arrow-repeat me-1"></i> Re-Run AI Analysis
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if analysis %}
+    <!-- ========================================================================= -->
+    <!-- AI ANALYSIS SHOWCASE -->
+    <!-- ========================================================================= -->
+
+    <!-- ROW 1: SCORE GAUGE & VERDICT SUMMARY -->
+    <div class="row g-4 mb-4">
+        <!-- Radial Score Gauge Card -->
+        <div class="col-md-5 col-xl-4">
+            <div class="card card-modern h-100 p-4 text-center d-flex flex-column justify-content-center align-items-center">
+                <span class="text-uppercase fw-bold text-muted small tracking-wider mb-2">AI Eligibility Score</span>
+                
+                <!-- SVG Circular Meter -->
+                <div class="score-circle-wrapper my-2">
+                    <svg class="score-circle-svg" viewBox="0 0 120 120">
+                        <circle class="score-circle-bg" cx="60" cy="60" r="50"></circle>
+                        <circle class="score-circle-progress stroke-{{ analysis.score_color_class }}" 
+                                cx="60" cy="60" r="50"
+                                data-score="{{ analysis.match_score }}"
+                                stroke="{% if analysis.match_score >= 80 %}#10b981{% elif analysis.match_score >= 60 %}#6366f1{% elif analysis.match_score >= 40 %}#f59e0b{% else %}#f43f5e{% endif %}">
+                        </circle>
+                    </svg>
+                    <div class="score-text">
+                        <div class="number text-{{ analysis.score_color_class }}">{{ analysis.match_score }}</div>
+                        <div class="unit">out of 100</div>
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    <span class="badge bg-{{ analysis.score_color_class }}-subtle text-{{ analysis.score_color_class }} fs-6 px-3 py-2 rounded-pill">
+                        <i class="bi bi-award-fill me-1"></i> {{ analysis.verdict }}
+                    </span>
+                </div>
+
+                <small class="text-muted mt-3">
+                    Evaluated against: <strong>{{ analysis.resume.get_candidate_name|default:"Candidate" }}</strong>
+                    {% if analysis.is_demo_mode %}
+                        <span class="badge bg-light text-secondary border ms-1">Offline Engine</span>
+                    {% else %}
+                        <span class="badge bg-success-subtle text-success ms-1">Gemini AI</span>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+
+        <!-- Executive Fit Summary & Key Strengths -->
+        <div class="col-md-7 col-xl-8">
+            <div class="card card-modern h-100 p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="fw-bold mb-0">Candidate Fit Evaluation</h5>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1">
+                            <i class="bi bi-cpu me-1"></i> AI Diagnostics
+                        </span>
+                    </div>
+
+                    <p class="text-dark mb-4 lead" style="font-size: 1rem; line-height: 1.65;">
+                        {{ analysis.summary }}
+                    </p>
+
+                    <!-- Key Strengths -->
+                    <h6 class="fw-bold text-success mb-2">
+                        <i class="bi bi-check-circle-fill me-1"></i> Key Strengths &amp; Matching Credentials
+                    </h6>
+                    <div class="row g-2 mb-2">
+                        {% for strength in analysis.strengths %}
+                        <div class="col-12">
+                            <div class="p-2 px-3 rounded-3 bg-success-subtle bg-opacity-35 border border-success border-opacity-25 d-flex align-items-start gap-2">
+                                <i class="bi bi-patch-check-fill text-success mt-1"></i>
+                                <span class="small text-dark fw-medium">{{ strength }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: SKILL GAP DIAGNOSTICS & ROADMAP -->
+    <div class="row g-4 mb-4">
+        <!-- SKILL GAP ANALYZER -->
+        <div class="col-lg-5">
+            <div class="card card-modern h-100">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-0"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Skill Gap Analyzer</h5>
+                        <small class="text-muted">Targeted improvements to maximize interview odds</small>
+                    </div>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">
+                        {{ analysis.skill_gaps|length }} Identified
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    {% if analysis.skill_gaps %}
+                        {% for gap in analysis.skill_gaps %}
+                        <div class="p-3 rounded-3 border bg-light mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <strong class="text-dark">{{ gap.skill }}</strong>
+                                <span class="badge {% if gap.importance == 'High' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-warning-subtle text-dark border border-warning-subtle{% endif %} rounded-pill">
+                                    {{ gap.importance }} Priority
+                                </span>
+                            </div>
+                            <p class="small text-muted mb-2">
+                                <i class="bi bi-arrow-right-short text-primary"></i> <strong>Action:</strong> {{ gap.advice }}
+                            </p>
+                            {% if gap.resource %}
+                            <div class="small text-primary bg-white p-2 rounded-2 border">
+                                <i class="bi bi-book-half me-1"></i> <strong>Resource:</strong> {{ gap.resource }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-success small"><i class="bi bi-check-all fs-5 me-1"></i> No critical skill gaps detected! Your background strongly aligns.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- PERSONALIZED APPLICATION ROADMAP -->
+        <div class="col-lg-7">
+            <div class="card card-modern h-100">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-0"><i class="bi bi-compass-fill text-primary me-2"></i>Personalized Application Roadmap</h5>
+                        <small class="text-muted">Step-by-step milestones to submit a winning application</small>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill">4 Phases</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="roadmap-timeline">
+                        {% for step in analysis.roadmap %}
+                        <div class="roadmap-step">
+                            <div class="step-marker">{{ forloop.counter }}</div>
+                            <div class="step-card">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                                    <h6 class="fw-bold text-dark mb-0">{{ step.step_title }}</h6>
+                                    <span class="badge bg-light text-primary border rounded-pill">{{ step.timeline }}</span>
+                                </div>
+                                <small class="text-muted fw-semibold d-block mb-2">{{ step.phase }}</small>
+                                
+                                <ul class="list-unstyled mb-0 small">
+                                    {% for item in step.action_items %}
+                                    <li class="mb-1 d-flex align-items-start gap-2">
+                                        <input type="checkbox" class="form-check-input mt-1" id="step_{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
+                                        <label class="form-check-label text-secondary" for="step_{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
+                                            {{ item }}
+                                        </label>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 3: AI-GENERATED APPLICATION DRAFT -->
+    <div class="card card-modern mb-4">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-file-earmark-text-fill text-primary me-2"></i>AI-Generated Application Draft
+                </h5>
+                <small class="text-muted">Tailored draft incorporating your exact projects, metrics, and role requirements</small>
+            </div>
+
+            <!-- Draft Controls: Type selector, Copy, Download -->
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <!-- Regenerate Dropdown Form -->
+                <form method="POST" action="{% url 'opportunity_regenerate_draft' opp.pk %}" class="d-flex align-items-center gap-1">
+                    {% csrf_token %}
+                    <select name="draft_type" class="form-select form-select-sm border rounded-3" style="width: auto;">
+                        <option value="Cover Letter" {% if analysis.draft_type == 'Cover Letter' %}selected{% endif %}>Cover Letter</option>
+                        <option value="Scholarship Statement" {% if analysis.draft_type == 'Scholarship Statement' %}selected{% endif %}>Scholarship Statement</option>
+                        <option value="Cold Outreach Email" {% if analysis.draft_type == 'Cold Outreach Email' %}selected{% endif %}>Cold Outreach Email</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-soft">
+                        <i class="bi bi-arrow-repeat"></i> Switch
+                    </button>
+                </form>
+
+                <!-- 1-Click Copy Button -->
+                <button type="button" class="btn btn-sm btn-light border" onclick="copyToClipboard('draftContent', this)" title="Copy text to clipboard">
+                    <i class="bi bi-clipboard me-1"></i> Copy
+                </button>
+
+                <!-- Download Text File Button -->
+                <button type="button" class="btn btn-sm btn-light border" onclick="downloadDraftAsFile('draftContent', '{{ opp.organization|slugify }}_{{ analysis.draft_type|slugify }}.txt')" title="Download as text file">
+                    <i class="bi bi-download me-1"></i> Download
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="draft-container" id="draftContent">{{ analysis.application_draft }}</div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- NO ANALYSIS YET: CALL TO ACTION -->
+    <div class="card card-modern p-5 text-center mb-4">
+        <div class="mb-3">
+            <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex p-4 fs-1">
+                <i class="bi bi-stars"></i>
+            </div>
+        </div>
+        <h4 class="fw-bold mb-2">Ready to Evaluate Your Fit?</h4>
+        <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto;">
+            Run ApplyMate's AI Eligibility Checker to compare your resume against this opportunity's requirements.
+        </p>
+        <form method="POST" action="{% url 'opportunity_analyze' opp.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary-custom px-4 py-2">
+                <i class="bi bi-cpu me-1"></i> Run AI Eligibility Check Now
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- FULL OPPORTUNITY POSTING DETAILS ACCORDION -->
+    <div class="card card-modern mb-4">
+        <div class="card-header bg-white py-3 px-4 border-bottom">
+            <h5 class="fw-bold mb-0"><i class="bi bi-card-text me-2 text-primary"></i>Original Posting Details &amp; Requirements</h5>
+        </div>
+        <div class="card-body p-4">
+            {% if opp.requirements %}
+            <div class="mb-3 pb-3 border-bottom">
+                <h6 class="fw-bold text-dark mb-1">Key Requirements Summary:</h6>
+                <p class="text-muted small mb-0">{{ opp.requirements }}</p>
+            </div>
+            {% endif %}
+
+            <h6 class="fw-bold text-dark mb-2">Full Description:</h6>
+            <div class="p-3 bg-light rounded-3 text-secondary small" style="white-space: pre-wrap; line-height: 1.65; max-height: 350px; overflow-y: auto;">
+                {{ opp.description }}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
